@@ -1,0 +1,2 @@
+[console_scripts]
+server = the_local_minima.server.app:main

@@ -1,0 +1,20 @@
+
+# virtual environments
+venv/
+.venv/
+
+# secrets, environment variables
+.env
+
+# python files
+__pycache__/
+
+# Lock files
+
+uv.lock
+
+# IDE
+.vscode/
+
+# data
+data/.env
