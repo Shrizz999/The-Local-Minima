@@ -55,9 +55,16 @@ class HomeConfig:
     loop_threshold: float = 3.0
     loop_penalty_base: float = 0.2
 
-    # Reward normalization bounds — map raw reward to [0, 1].
-    reward_raw_min: float = -25.0
-    reward_raw_max: float =   6.0
+    # Decomposed reward weights - must sum to 1.0
+    reward_weight_energy:  float = 0.4
+    reward_weight_cost:    float = 0.4
+    reward_weight_penalty: float = 0.2
+
+    # Penalty normalisation denominators
+    penalty_max_thermal:   float = 12.0
+    penalty_max_ev:        float =  5.0
+    penalty_max_violation: float =  0.5
+    penalty_max_loop:      float =  3.2
 
     load_profile: List[float] = [0.3, 0.3, 0.3, 0.3, 0.3, 0.4, 0.6, 0.9, 1.0, 0.8, 0.7, 0.7, 0.7, 0.6, 0.6, 0.7, 0.8, 1.2, 1.5, 1.8, 1.6, 1.2, 0.8, 0.5]
 
@@ -144,12 +151,7 @@ class TheLocalMinimaEnvironment(Environment):
         new_batt_soc = self._update_battery_soc(battery_cmd)
         new_ev_soc = self._update_ev_soc(ev_cmd)
 
-        new_indoor_temp = self._update_indoor_temp(
-            action.hvac_operational_mode,
-            action.hvac_temperature_setpoint,
-            self._outdoor_temp(step_idx),
-            self._ghi(step_idx),
-        )
+        new_indoor_temp = self._update_indoor_temp(action.hvac_operational_mode, action.hvac_temperature_setpoint, self._outdoor_temp(step_idx), self._ghi(step_idx))
 
         energy_cost = net_grid * tariff * 0.25
         self._state.cumulative_financial_cost += energy_cost
@@ -177,7 +179,7 @@ class TheLocalMinimaEnvironment(Environment):
             diag += "CRITICAL: EV departed below 80% SoC."
 
         next_step = self._state.step_count
-        norm_reward = self._normalize_reward(reward)
+        norm_reward = self._compute_normalized_reward(net_grid=net_grid, total_load=total_load, energy_cost=energy_cost, thermal_penalty=thermal_penalty, ev_penalty=ev_penalty, violation_penalty=violation_penalty, loop_penalty=loop_penalty)
 
         self._obs = GridEdgeObservation(
             timestamp_iso=self._step_to_iso(next_step),
@@ -217,10 +219,22 @@ class TheLocalMinimaEnvironment(Environment):
         else:
             return self._score_hard()
         
-    def _normalize_reward(self, raw: float) -> float:
+    def _compute_normalized_reward(self, net_grid: float, total_load: float, energy_cost: float, thermal_penalty: float, ev_penalty: float, violation_penalty: float, loop_penalty: float) -> float:
         cfg = self._config
-        span = cfg.reward_raw_max - cfg.reward_raw_min
-        return round(max(0.0, min(1.0, (raw - cfg.reward_raw_min) / span)), 4)
+        if total_load > 0:
+            energy_score = max(0.0, min(1.0, 1.0 - net_grid / total_load))
+        else:
+            energy_score = 1.0
+        worst_cost = total_load * 8.10 * 0.25
+        if worst_cost > 0:
+            cost_score = max(0.0, min(1.0, 1.0 - energy_cost / worst_cost))
+        else:
+            cost_score = 1.0
+        penalty_total_max = (cfg.penalty_max_thermal + cfg.penalty_max_ev + cfg.penalty_max_violation + cfg.penalty_max_loop)
+        raw_penalties = (abs(thermal_penalty) + abs(ev_penalty) + abs(violation_penalty) + abs(loop_penalty))
+        penalty_score = max(0.0, min(1.0, 1.0 - raw_penalties / penalty_total_max))
+        reward = (cfg.reward_weight_energy * energy_score + cfg.reward_weight_cost * cost_score + cfg.reward_weight_penalty * penalty_score)
+        return round(max(0.0, min(1.0, reward)), 4)
 
     def _clamp_battery(self, cmd: float):
         soc = self._obs.home_battery_soc

@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from client import GridEdgeEnv
-from models import GridEdgeAction, GridEdgeObservation
+from .client import GridEdgeEnv
+from .models import GridEdgeAction, GridEdgeObservation
 
 API_KEY = os.getenv("HF_TOKEN")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
@@ -19,7 +19,7 @@ MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 TASK_NAME = os.getenv("TASK", "solar_self_consumption")
 BENCHMARK = "grid_edge_v1"
 IMAGE_NAME = os.getenv("IMAGE_NAME")
-ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:8000")
+ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:7860")
 
 TASKS = [
     "solar_self_consumption",
