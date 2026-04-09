@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from .client import GridEdgeEnv
-from .models import GridEdgeAction, GridEdgeObservation
+from client import GridEdgeEnv
+from models import GridEdgeAction, GridEdgeObservation
 
 API_KEY = os.getenv("HF_TOKEN")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
