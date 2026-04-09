@@ -1,0 +1,7 @@
+.git
+.gitignore
+.venv
+env/
+venv/
+*.egg-info/
+.env
