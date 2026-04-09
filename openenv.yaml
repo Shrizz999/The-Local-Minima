@@ -1,0 +1,64 @@
+name: grid_edge_env
+description: >
+  A production-grade cyber-physical simulator for smart home energy orchestration,
+  balancing solar yield, battery dispatch, EV charging, and ToD economic arbitrage.
+version: "1.0.0"
+author: Shrizz999
+
+observation_space:
+  type: json
+  description: >
+    Telemetry feed providing a comprehensive snapshot of the immediate physical state,
+    economic conditions (MSEDCL ToD tariffs), and forward-looking meteorological/pricing forecasts.
+
+action_space:
+  type: composite
+  description: >
+    Composite schema encompassing discrete operational modes and continuous setpoints
+    with enforced physical limitations.
+  actions:
+    hvac_operational_mode: ['off', 'cooling', 'heating']
+    hvac_temperature_setpoint: [18.0, 28.0]
+    battery_dispatch_command: [-5.0, 5.0]
+    ev_charging_allocation: [0.0, 7.2]
+    grid_export_permission: [true, false]
+
+endpoints:
+  reset: /reset
+  step: /step
+  score: /score
+
+tasks:
+  - id: solar_self_consumption
+    difficulty: easy
+    description: >
+      Maximize localized self-consumption of renewable energy and minimize municipal grid imports.
+      Store excess solar during the midday generation peak, and discharge to support the base load
+      during the evening.
+    max_steps: 96
+
+  - id: tod_arbitrage
+    difficulty: medium
+    description: >
+      Engage in active financial arbitrage using MSEDCL Time-of-Day electricity pricing.
+      Import energy during cheap off-peak hours to charge the battery, and discharge it to
+      power the home during punitive evening peak pricing hours while managing weather uncertainty.
+    max_steps: 96
+
+  - id: full_orchestration
+    difficulty: hard
+    description: >
+      Cyber-physical orchestration under multi-objective conflict. Continuously balance ToD economic
+      arbitrage, solar self-consumption, human thermal comfort (HVAC), and critical transportation
+      readiness (EV charging).
+    max_steps: 96
+
+scoring:
+  reward_range: [0.0, 1.0]
+  success_threshold: 0.5
+  score_formula: deterministic_grader_ratio
+
+constraints:
+  max_runtime_seconds: 1200
+  max_memory_gb: 8
+  max_vcpu: 2
