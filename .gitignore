@@ -17,4 +17,4 @@ uv.lock
 .vscode/
 
 # data
-data/.env
+data/

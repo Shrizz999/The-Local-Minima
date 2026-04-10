@@ -11,7 +11,7 @@ from openenv.core import EnvClient
 from openenv.core.client_types import StepResult
 from openenv.core.env_server.types import State
 
-from models import GridEdgeAction, GridEdgeObservation, GridEdgeState
+from the_local_minima.models import GridEdgeAction, GridEdgeObservation, GridEdgeState
 
 class GridEdgeEnv(EnvClient[GridEdgeAction, GridEdgeObservation, GridEdgeState]):
     """

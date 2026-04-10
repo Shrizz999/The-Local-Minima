@@ -2,7 +2,7 @@ from uuid import uuid4
 from datetime import datetime, timedelta
 from typing import Optional, List
 from openenv.core.env_server.interfaces import Environment
-from models import GridEdgeAction, GridEdgeObservation, GridEdgeRewardInfo, GridEdgeState
+from the_local_minima.models import GridEdgeAction, GridEdgeObservation, GridEdgeRewardInfo, GridEdgeState
 import math
 import pvlib
 

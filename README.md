@@ -1,11 +1,13 @@
-Title: Grid Edge Orchestrator
+---
+title: Grid Edge Orchestrator
+sdk: docker
 emoji: ⚡
 colorFrom: blue
 colorTo: green
-sdk: docker
+python_version: 3.10+
+suggested_hardware: cpu-basic
 pinned: false
-tags:
-  - openenv
+---
 
 # The "Grid Edge" Home Energy Orchestrator
 
@@ -35,9 +37,9 @@ The agent controls the home's energy profile through the `GridEdgeAction` schema
 | Field Designation | Data Type | Permissible Range | Operational Description |
 | :--- | :--- | :--- | :--- |
 | **hvac_operational_mode** | str | ['off', 'cooling', 'heating'] | Dictates the active thermodynamic state. |
-| **hvac_temperature_setpoint** | float | $18.0 \le x \le 28.0$ | The target indoor temperature in Celsius. |
-| **battery_dispatch_command** | float | $-5.0 \le x \le 5.0$ | Charging (positive) or discharging (negative) in kW. |
-| **ev_charging_allocation** | float | $0.0 \le x \le 7.2$ | Power allocated to Level 2 EV charging in kW. |
+| **hvac_temperature_setpoint** | float | 18.0 le x le 28.0 | The target indoor temperature in Celsius. |
+| **battery_dispatch_command** | float | -5.0 kW le x le 5.0 kW | Charging (positive) or discharging (negative) in kW. |
+| **ev_charging_allocation** | float | 0.0 kW le x le 7.2 kW | Power allocated to Level 2 EV charging in kW. |
 | **grid_export_permission** | bool | True / False | Toggle permitting excess solar sales to the grid. |
 
 
@@ -117,4 +119,3 @@ In a typical residential application within the Pune microgrid (utilizing MSEDCL
 * **Monthly Savings:** By prioritizing solar self-consumption and HVAC optimization, users save between **₹2,800 and ₹4,500 per month** by offsetting expensive grid imports during peak hours.
 * **Annual Revenue and Credits:** Total annual benefits range from **₹35,000 to ₹60,000**. This includes net-metering credits earned during high-generation months where excess solar is "sold" back to the municipal grid, effectively zeroing out bills.
 * **Lifetime ROI:** Over a standard 25-year operational lifespan, a well-orchestrated 3 kW system in Pune can yield a cumulative return of approximately **₹16.11 lakh**, which is over 11 times the initial net investment.
-
