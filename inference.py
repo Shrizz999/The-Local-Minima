@@ -124,9 +124,9 @@ def get_model_action(client: OpenAI, step: int, obs_dict: Dict[str, Any], last_r
     except Exception as exc:
         return extract_json_action(""), str(exc)
 
-async def run_task(client: OpenAI, task_name: str) -> None:
+def run_task(client: OpenAI, task_name: str) -> None:
     if IMAGE_NAME:
-        env_instance = await GridEdgeEnv.from_docker_image(IMAGE_NAME, task=task_name)
+        env_instance = asyncio.run(GridEdgeEnv.from_docker_image(IMAGE_NAME))
     else:
         env_instance = GridEdgeEnv(base_url=ENV_BASE_URL)
 
@@ -139,8 +139,9 @@ async def run_task(client: OpenAI, task_name: str) -> None:
     log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
 
     try:
-        async with env_instance as env:
-            result = await env.reset(task=task_name)
+        with env_instance as env:
+            result = env.reset(task=task_name)
+            print(result)
             obs = result.observation if hasattr(result, "observation") else result
             obs_dict = obs_to_dict(obs)
             last_reward = 0.0
@@ -157,7 +158,8 @@ async def run_task(client: OpenAI, task_name: str) -> None:
                 )
 
                 try:
-                    result = await env.step(action)
+                    result = env.step(action)
+                    print(result)
                     obs = result.observation
                     reward = result.reward
                     done = result.done
@@ -188,10 +190,10 @@ async def run_task(client: OpenAI, task_name: str) -> None:
     finally:
         log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
-async def main() -> None:
+def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     for task_name in TASKS:
-        await run_task(client, task_name)
+        run_task(client, task_name)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
