@@ -4,7 +4,6 @@ sdk: docker
 emoji: ⚡
 colorFrom: blue
 colorTo: green
-python_version: 3.10+
 suggested_hardware: cpu-basic
 pinned: false
 ---
