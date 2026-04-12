@@ -1,3 +1,4 @@
+import math
 import os
 import json
 import textwrap
@@ -10,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from client import GridEdgeEnv
-from models import GridEdgeAction, GridEdgeObservation
+from models import GridEdgeAction, GridEdgeObservation, GridEdgeState
 
 API_KEY = os.environ.get("HF_TOKEN")
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
@@ -98,7 +99,7 @@ def build_user_prompt(step: int, obs_dict: Dict[str, Any], last_reward: float, h
         Current Observation:
         {obs_json}
         Last Step Reward: {last_reward:.4f}
-        Previous 4 Steps (action → reward):
+        Previous 4 Steps (action -> reward):
         {history_block}
         Return ONLY valid JSON for your next action.
     """).strip()
@@ -110,7 +111,7 @@ def get_model_action(client: OpenAI, step: int, obs_dict: Dict[str, Any], last_r
             model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user",   "content": user_prompt},
+                {"role": "user", "content": user_prompt},
             ],
             temperature=TEMPERATURE,
             max_tokens=MAX_TOKENS,
@@ -122,12 +123,35 @@ def get_model_action(client: OpenAI, step: int, obs_dict: Dict[str, Any], last_r
     except Exception as exc:
         return extract_json_action(""), str(exc)
 
+def compute_score(env: GridEdgeEnv, task_name: str, last_ev_soc: float) -> float:
+    try:
+        state: GridEdgeState = env.state()
+    except Exception:
+        return 0.0
+    if task_name == "solar_self_consumption":
+        available = state.solar_available_kwh
+        if available == 0:
+            return 0.0
+        return round(max(0.0, min(1.0, state.solar_utilized_kwh / available)), 4)
+    elif task_name == "tod_arbitrage":
+        rbc = state.rbc_baseline_cost
+        agent = state.cumulative_financial_cost
+        if rbc == 0:
+            return 0.0
+        return round(max(0.0, min(1.0, (rbc - agent) / rbc)), 4)
+    else:
+        cost_ratio = state.cumulative_financial_cost / max(state.rbc_baseline_cost, 0.001)
+        ev_penalty = max(0.0, 0.80 - last_ev_soc)
+        J = 0.4 * cost_ratio + 0.3 * ev_penalty
+        return round(max(0.0, min(1.0, math.exp(-2.0 * J))), 4)
+
 def run_task(env: GridEdgeEnv, client: OpenAI, task_name: str) -> None:
     history: List[str] = []
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0
     success = False
+    last_ev_soc = 0.0
 
     log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
 
@@ -155,13 +179,14 @@ def run_task(env: GridEdgeEnv, client: OpenAI, task_name: str) -> None:
                     reward = result.reward
                     done = result.done
                     obs_dict = obs_to_dict(obs)
+                    last_ev_soc = obs.electric_vehicle_soc
 
                     diag = obs.system_diagnostic_msg or "OK"
                     if "WARNING" in diag or "CRITICAL" in diag:
                         error_msg = diag
 
                 except Exception as exc:
-                    reward = -5.0
+                    reward = 0.0
                     done = True
                     error_msg = str(exc)
 
@@ -174,8 +199,8 @@ def run_task(env: GridEdgeEnv, client: OpenAI, task_name: str) -> None:
 
                 if done:
                     break
-
-            score = env.score()
+                
+            score = compute_score(env, task_name, last_ev_soc)
             success = score >= SUCCESS_SCORE_THRESHOLD
 
     finally:
