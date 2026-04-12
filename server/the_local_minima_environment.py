@@ -213,11 +213,11 @@ class TheLocalMinimaEnvironment(Environment):
 
     def score(self) -> float:
         if self._task == "solar_self_consumption":
-            return self._score_easy()
+            return self._garder_easy()
         elif self._task == "tod_arbitrage":
-            return self._score_medium()
+            return self._grader_medium()
         else:
-            return self._score_hard()
+            return self._garder_hard()
         
     def _compute_normalized_reward(self, net_grid: float, total_load: float, energy_cost: float, thermal_penalty: float, ev_penalty: float, violation_penalty: float, loop_penalty: float) -> float:
         cfg = self._config
@@ -358,20 +358,20 @@ class TheLocalMinimaEnvironment(Environment):
             result.append(7 <= hour < 9 or 18 <= hour < 23)
         return result
 
-    def _score_easy(self) -> float:
+    def _garder_easy(self) -> float:
         available = self._state.solar_available_kwh
         if available == 0:
             return 0.0
         return round(max(0.0, min(1.0, self._state.solar_utilized_kwh / available)), 4)
 
-    def _score_medium(self) -> float:
+    def _grader_medium(self) -> float:
         rbc = self._state.rbc_baseline_cost
         agent = self._state.cumulative_financial_cost
         if rbc == 0:
             return 0.0
         return round(max(0.0, min(1.0, (rbc - agent) / rbc)), 4)
 
-    def _score_hard(self) -> float:
+    def _garder_hard(self) -> float:
         cfg = self._config
         w1, w3 = 0.4, 0.3
         alpha = 2.0
