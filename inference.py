@@ -127,23 +127,23 @@ def compute_score(env: GridEdgeEnv, task_name: str, last_ev_soc: float) -> float
     try:
         state: GridEdgeState = env.state()
     except Exception:
-        return 0.0
+        return 0.001
     if task_name == "solar_self_consumption":
         available = state.solar_available_kwh
         if available == 0:
-            return 0.0
-        return round(max(0.0, min(1.0, state.solar_utilized_kwh / available)), 4)
+            return 0.001
+        return round(max(0.001, min(0.999, state.solar_utilized_kwh / available)), 4)
     elif task_name == "tod_arbitrage":
         rbc = state.rbc_baseline_cost
         agent = state.cumulative_financial_cost
         if rbc == 0:
-            return 0.0
-        return round(max(0.0, min(1.0, (rbc - agent) / rbc)), 4)
+            return 0.001
+        return round(max(0.001, min(0.999, (rbc - agent) / rbc)), 4)
     else:
         cost_ratio = state.cumulative_financial_cost / max(state.rbc_baseline_cost, 0.001)
         ev_penalty = max(0.0, 0.80 - last_ev_soc)
         J = 0.4 * cost_ratio + 0.3 * ev_penalty
-        return round(max(0.0, min(1.0, math.exp(-2.0 * J))), 4)
+        return round(max(0.001, min(0.999, math.exp(-2.0 * J))), 4)
 
 def run_task(env: GridEdgeEnv, client: OpenAI, task_name: str) -> None:
     history: List[str] = []
