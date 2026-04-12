@@ -361,15 +361,15 @@ class TheLocalMinimaEnvironment(Environment):
     def _garder_easy(self) -> float:
         available = self._state.solar_available_kwh
         if available == 0:
-            return 0.0
-        return round(max(0.0, min(1.0, self._state.solar_utilized_kwh / available)), 4)
+            return 0.001
+        return round(max(0.001, min(0.999, self._state.solar_utilized_kwh / available)), 4)
 
     def _grader_medium(self) -> float:
         rbc = self._state.rbc_baseline_cost
         agent = self._state.cumulative_financial_cost
         if rbc == 0:
-            return 0.0
-        return round(max(0.0, min(1.0, (rbc - agent) / rbc)), 4)
+            return 0.001
+        return round(max(0.001, min(0.999, (rbc - agent) / rbc)), 4)
 
     def _garder_hard(self) -> float:
         cfg = self._config
@@ -378,4 +378,4 @@ class TheLocalMinimaEnvironment(Environment):
         cost_ratio = self._state.cumulative_financial_cost / max(self._state.rbc_baseline_cost, 0.001)
         ev_penalty = max(0.0, cfg.ev_min_departure_soc - self._obs.electric_vehicle_soc)
         J = w1 * cost_ratio + w3 * ev_penalty
-        return round(max(0.0, min(1.0, math.exp(-alpha * J))), 4)
+        return round(max(0.001, min(0.999, math.exp(-alpha * J))), 4)
