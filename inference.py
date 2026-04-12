@@ -1,4 +1,3 @@
-import asyncio
 import os
 import json
 import textwrap
@@ -13,13 +12,12 @@ load_dotenv()
 from client import GridEdgeEnv
 from models import GridEdgeAction, GridEdgeObservation
 
-API_KEY = os.getenv("HF_TOKEN")
-API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-TASK_NAME = os.getenv("TASK", "solar_self_consumption")
+API_KEY = os.environ.get("HF_TOKEN")
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
+MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 BENCHMARK = "grid_edge_v1"
-IMAGE_NAME = os.getenv("IMAGE_NAME")
-ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:7860")
+IMAGE_NAME = os.environ.get("IMAGE_NAME")
+ENV_URL = os.environ.get("ENV_URL", "https://shrizz999-tlm.hf.space")
 
 TASKS = [
     "solar_self_consumption",
@@ -124,12 +122,7 @@ def get_model_action(client: OpenAI, step: int, obs_dict: Dict[str, Any], last_r
     except Exception as exc:
         return extract_json_action(""), str(exc)
 
-def run_task(client: OpenAI, task_name: str) -> None:
-    if IMAGE_NAME:
-        env_instance = asyncio.run(GridEdgeEnv.from_docker_image(IMAGE_NAME))
-    else:
-        env_instance = GridEdgeEnv(base_url=ENV_BASE_URL)
-
+def run_task(env: GridEdgeEnv, client: OpenAI, task_name: str) -> None:
     history: List[str] = []
     rewards: List[float] = []
     steps_taken = 0
@@ -139,10 +132,9 @@ def run_task(client: OpenAI, task_name: str) -> None:
     log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
 
     try:
-        with env_instance as env:
+        with env.sync() as env:
             result = env.reset(task=task_name)
-            print(result)
-            obs = result.observation if hasattr(result, "observation") else result
+            obs = result.observation if hasattr(result, "observation") else {}
             obs_dict = obs_to_dict(obs)
             last_reward = 0.0
 
@@ -159,7 +151,6 @@ def run_task(client: OpenAI, task_name: str) -> None:
 
                 try:
                     result = env.step(action)
-                    print(result)
                     obs = result.observation
                     reward = result.reward
                     done = result.done
@@ -192,8 +183,9 @@ def run_task(client: OpenAI, task_name: str) -> None:
 
 def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+    env = GridEdgeEnv(base_url=ENV_URL)
     for task_name in TASKS:
-        run_task(client, task_name)
+        run_task(env, client, task_name)
 
 if __name__ == "__main__":
     main()

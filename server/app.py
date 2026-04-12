@@ -67,7 +67,6 @@ except Exception as e:
     _weather_load_error = f"Failed to parse EPW file: {e}"
     print(f"[grid-edge] WARNING: {_weather_load_error}")
 
-
 def create_environment() -> TheLocalMinimaEnvironment:
     env = TheLocalMinimaEnvironment()
 
@@ -78,7 +77,6 @@ def create_environment() -> TheLocalMinimaEnvironment:
 
     return env
 
-
 app = create_app(
     create_environment,
     GridEdgeAction,
@@ -88,11 +86,10 @@ app = create_app(
 )
 
 
-def main():
+def main(host: str = "0.0.0.0", port: int = 7860):
     import uvicorn
-    # Configured for Hugging Face Spaces default port
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    uvicorn.run(app, host=host, port=port)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
